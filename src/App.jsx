@@ -171,7 +171,6 @@ function App() {
                 onChange={e => setBreaths(Number(e.target.value))}
                 style={{ fontSize: '1.25rem', padding: '0.5rem' }}
               >
-                <option value={2}>2</option>
                 <option value={30}>30</option>
                 <option value={40}>40</option>
                 <option value={50}>50</option>
