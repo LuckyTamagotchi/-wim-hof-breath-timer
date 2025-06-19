@@ -171,7 +171,6 @@ function App() {
                 onChange={e => setBreaths(Number(e.target.value))}
                 style={{ fontSize: '1.25rem', padding: '0.5rem' }}
               >
-                <option value={2}>2</option>
                 <option value={30}>30</option>
                 <option value={40}>40</option>
                 <option value={50}>50</option>
@@ -263,10 +262,18 @@ function App() {
             userSelect: 'none',
           }}
         >
-          <span style={{ fontSize: '6rem' }}>
-            {Math.floor(elapsed / 60).toString().padStart(2, '0')}:
-            {(elapsed % 60).toString().padStart(2, '0')}
-          </span>
+          <div style={{
+            background: '#000',
+            color: '#fff',
+            padding: '1rem 2rem',
+            borderRadius: '0.5rem',
+            display: 'inline-block',
+          }}>
+            <span style={{ fontSize: '6rem', margin: 0 }}>
+              {Math.floor(elapsed / 60).toString().padStart(2, '0')}:
+              {(elapsed % 60).toString().padStart(2, '0')}
+            </span>
+          </div>
         </div>
       )}
 
