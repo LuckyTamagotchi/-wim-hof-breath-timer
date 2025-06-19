@@ -171,6 +171,7 @@ function App() {
                 onChange={e => setBreaths(Number(e.target.value))}
                 style={{ fontSize: '1.25rem', padding: '0.5rem' }}
               >
+                <option value={2}>2</option>
                 <option value={30}>30</option>
                 <option value={40}>40</option>
                 <option value={50}>50</option>
@@ -224,15 +225,26 @@ function App() {
             textAlign: 'center',
           }}
         >
-          <p style={{ fontSize: '1.5rem', margin: 0 }}>
+          <p style={{ fontSize: '1.5rem', margin: 0, color: '#000' }}>
             Round {currentRound} of {rounds}
           </p>
-          <h1 style={{ fontSize: '10rem', margin: '0.5rem 0' }}>
-            {currentBreath}
-          </h1>
-          <p style={{ fontSize: '2rem', margin: 0 }}>
-            of {breaths}
-          </p>
+          <div
+            style={{
+              background: '#000',
+              color: '#fff',
+              padding: '1rem 2rem',
+              borderRadius: '0.5rem',
+              display: 'inline-block',
+              margin: '1rem 0',
+            }}
+          >
+            <h1 style={{ fontSize: '10rem', margin: '0' }}>
+              {currentBreath}
+            </h1>
+            <p style={{ fontSize: '2rem', margin: 0 }}>
+              of {breaths}
+            </p>
+          </div>
         </div>
       )}
 
