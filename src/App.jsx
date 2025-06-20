@@ -42,33 +42,36 @@ function App() {
       setCurrentRound(1);
       setRetentionDurations([]);
     }
-    setPhase('breathing');
-    setCurrentBreath(0);
-
-    // Schedule gapless breath loops
-    const ctx = audioContextRef.current;
-    const buffer = breathBufferRef.current;
-    if (!buffer) {
-      console.error('Breath buffer not ready');
-      return;
-    }
-    const startTime = ctx.currentTime + 0.1;
-    const loopDurationMs = buffer.duration * 1000;
-    // Update currentBreath display and schedule buffer sources
-    for (let i = 0; i < breaths; i++) {
-      // schedule visual counter
-      setTimeout(() => setCurrentBreath(i + 1), i * loopDurationMs);
-      // schedule audio playback
-      const src = ctx.createBufferSource();
-      src.buffer = buffer;
-      src.connect(ctx.destination);
-      src.start(startTime + i * buffer.duration);
-    }
-    // schedule bell and transition
+    // Delay start by 3 seconds
     setTimeout(() => {
-      playBell();
-      setPhase('retention');
-    }, breaths * loopDurationMs);
+      setPhase('breathing');
+      setCurrentBreath(0);
+
+      // Schedule gapless breath loops
+      const ctx = audioContextRef.current;
+      const buffer = breathBufferRef.current;
+      if (!buffer) {
+        console.error('Breath buffer not ready');
+        return;
+      }
+      const startTime = ctx.currentTime + 0.1;
+      const loopDurationMs = buffer.duration * 1000;
+      // Update currentBreath display and schedule buffer sources
+      for (let i = 0; i < breaths; i++) {
+        // schedule visual counter
+        setTimeout(() => setCurrentBreath(i + 1), i * loopDurationMs);
+        // schedule audio playback
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        src.connect(ctx.destination);
+        src.start(startTime + i * buffer.duration);
+      }
+      // schedule bell and transition
+      setTimeout(() => {
+        playBell();
+        setPhase('retention');
+      }, breaths * loopDurationMs);
+    }, 3000);
   };
 
   const handleRetentionTap = () => {
