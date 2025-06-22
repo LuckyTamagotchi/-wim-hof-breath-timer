@@ -20,6 +20,7 @@ function App() {
   const audioContextRef = useRef(null);
   const breathBufferRef = useRef(null);
   const bellBufferRef = useRef(null);
+  const chimeBufferRef = useRef(null);
   const bellAudioRef = useRef(null);
 
   // Play bell buffer via Web Audio
@@ -28,6 +29,20 @@ function App() {
     const buffer = bellBufferRef.current;
     if (!buffer) {
       console.error('Bell buffer not ready');
+      return;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(ctx.destination);
+    src.start();
+  };
+
+  // Play chime buffer via Web Audio
+  const playChime = () => {
+    const ctx = audioContextRef.current;
+    const buffer = chimeBufferRef.current;
+    if (!buffer) {
+      console.error('Chime buffer not ready');
       return;
     }
     const src = ctx.createBufferSource();
@@ -58,8 +73,14 @@ function App() {
       const loopDurationMs = buffer.duration * 1000;
       // Update currentBreath display and schedule buffer sources
       for (let i = 0; i < breaths; i++) {
-        // schedule visual counter
-        setTimeout(() => setCurrentBreath(i + 1), i * loopDurationMs);
+        // schedule visual counter and chime
+        setTimeout(() => {
+          const count = i + 1;
+          setCurrentBreath(count);
+          if (count === breaths - 5) {
+            playChime();
+          }
+        }, i * loopDurationMs);
         // schedule audio playback
         const src = ctx.createBufferSource();
         src.buffer = buffer;
@@ -75,6 +96,7 @@ function App() {
   };
 
   const handleRetentionTap = () => {
+    playChime();
     clearInterval(retentionTimerRef.current);
     clearInterval(bellIntervalRef.current);
     setRetentionDurations(d => [...d, elapsed]);
@@ -147,12 +169,18 @@ function App() {
       .then(ab => audioContextRef.current.decodeAudioData(ab))
       .then(buffer => { breathBufferRef.current = buffer; })
       .catch(err => console.error('Failed to load breath buffer:', err));
-     // Load bell buffer
+    // Load bell buffer
     fetch('/bell.mp3')
       .then(res => res.arrayBuffer())
       .then(ab => audioContextRef.current.decodeAudioData(ab))
       .then(buffer => { bellBufferRef.current = buffer; })
       .catch(err => console.error('Failed to load bell buffer:', err));
+    // Load chime buffer
+    fetch('/chime.mp3')
+      .then(res => res.arrayBuffer())
+      .then(ab => audioContextRef.current.decodeAudioData(ab))
+      .then(buffer => { chimeBufferRef.current = buffer; })
+      .catch(err => console.error('Failed to load chime buffer:', err));
   }, []);
 
   return (
