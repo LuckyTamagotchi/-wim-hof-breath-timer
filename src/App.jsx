@@ -23,6 +23,8 @@ function App() {
   const chimeBufferRef = useRef(null);
   const bellAudioRef = useRef(null);
   const bufferSourcesRef = useRef([]);
+  const lastBellTimeRef = useRef(0);
+  const recoveryTransitionRef = useRef(false);
 
   // Play bell buffer via Web Audio
   const playBell = () => {
@@ -32,6 +34,10 @@ function App() {
       console.error('Bell buffer not ready');
       return;
     }
+    const now = ctx.currentTime;
+    // Ignore if played less than 0.5s ago
+    if (now - lastBellTimeRef.current < 0.5) return;
+    lastBellTimeRef.current = now;
     const src = ctx.createBufferSource();
     src.buffer = buffer;
     src.connect(ctx.destination);
@@ -139,7 +145,8 @@ function App() {
 
   // Transition after recovery reaches zero, with a pause for bell playback
   useEffect(() => {
-    if (phase === 'recovery' && recoveryCountdown === 0) {
+    if (phase === 'recovery' && recoveryCountdown === 0 && !recoveryTransitionRef.current) {
+      recoveryTransitionRef.current = true;
       clearInterval(recoveryTimerRef.current);
       playBell();
       const isLastRound = currentRound >= rounds;
@@ -153,6 +160,13 @@ function App() {
       }, 5000);
     }
   }, [phase, recoveryCountdown, currentRound, rounds]);
+
+  // Reset transition guard on entering recovery phase
+  useEffect(() => {
+    if (phase === 'recovery') {
+      recoveryTransitionRef.current = false;
+    }
+  }, [phase]);
 
   useEffect(() => {
     if (phase !== 'retention') return;
@@ -211,6 +225,7 @@ function App() {
                 onChange={e => setBreaths(Number(e.target.value))}
                 style={{ fontSize: '1.25rem', padding: '0.5rem' }}
               >
+                <option value={2}>2</option>
                 <option value={30}>30</option>
                 <option value={40}>40</option>
                 <option value={50}>50</option>
