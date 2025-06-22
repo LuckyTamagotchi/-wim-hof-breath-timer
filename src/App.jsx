@@ -22,6 +22,7 @@ function App() {
   const bellBufferRef = useRef(null);
   const chimeBufferRef = useRef(null);
   const bellAudioRef = useRef(null);
+  const bufferSourcesRef = useRef([]);
 
   // Play bell buffer via Web Audio
   const playBell = () => {
@@ -59,6 +60,12 @@ function App() {
     }
     // Delay start by 3 seconds
     setTimeout(() => {
+      // Stop and clear any previously scheduled breath sources
+      bufferSourcesRef.current.forEach(srcNode => {
+        try { srcNode.stop(); } catch {}
+      });
+      bufferSourcesRef.current = [];
+
       setPhase('breathing');
       setCurrentBreath(0);
 
@@ -83,6 +90,8 @@ function App() {
         }, i * loopDurationMs);
         // schedule audio playback
         const src = ctx.createBufferSource();
+        // Track this source so we can stop it if needed
+        bufferSourcesRef.current.push(src);
         src.buffer = buffer;
         src.connect(ctx.destination);
         src.start(startTime + i * buffer.duration);
