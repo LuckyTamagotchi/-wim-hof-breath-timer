@@ -4,6 +4,7 @@ function App() {
   const [breaths, setBreaths] = useState(30);
   const [rounds, setRounds] = useState(3);
   const [phase, setPhase] = useState('setup');
+  const [isLaunching, setIsLaunching] = useState(false);
 
   const [currentRound, setCurrentRound] = useState(1);
   const [elapsed, setElapsed] = useState(0);
@@ -16,15 +17,14 @@ function App() {
   const recoveryTimerRef = useRef(null);
 
   // Refs for audio elements
-  const breathAudioRef = useRef(null);
   const audioContextRef = useRef(null);
   const breathBufferRef = useRef(null);
   const bellBufferRef = useRef(null);
   const chimeBufferRef = useRef(null);
-  const bellAudioRef = useRef(null);
   const bufferSourcesRef = useRef([]);
   const lastBellTimeRef = useRef(0);
   const recoveryTransitionRef = useRef(false);
+  const timeoutsRef = useRef([]);
 
   // Play bell buffer via Web Audio
   const playBell = () => {
@@ -60,12 +60,21 @@ function App() {
 
   // Handler to start breathing sequence
   const handleStart = () => {
+    setIsLaunching(true);
+    // Clear any previously scheduled timeouts and audio sources
+    timeoutsRef.current.forEach(t => clearTimeout(t));
+    timeoutsRef.current = [];
+    bufferSourcesRef.current.forEach(srcNode => {
+      try { srcNode.stop(); } catch {}
+    });
+    bufferSourcesRef.current = [];
+
     if (phase === 'setup') {
       setCurrentRound(1);
       setRetentionDurations([]);
     }
     // Delay start by 3 seconds
-    setTimeout(() => {
+    const startTimeout = setTimeout(() => {
       // Stop and clear any previously scheduled breath sources
       bufferSourcesRef.current.forEach(srcNode => {
         try { srcNode.stop(); } catch {}
@@ -86,28 +95,31 @@ function App() {
       const loopDurationMs = buffer.duration * 1000;
       // Update currentBreath display and schedule buffer sources
       for (let i = 0; i < breaths; i++) {
-        // schedule visual counter and chime
-        setTimeout(() => {
-          const count = i + 1;
-          setCurrentBreath(count);
-          if (count === breaths - 5) {
-            playChime();
-          }
-        }, i * loopDurationMs);
-        // schedule audio playback
+        timeoutsRef.current.push(
+          setTimeout(() => {
+            const count = i + 1;
+            setCurrentBreath(count);
+            if (count === breaths - 5) {
+              playChime();
+            }
+          }, i * loopDurationMs)
+        );
         const src = ctx.createBufferSource();
-        // Track this source so we can stop it if needed
         bufferSourcesRef.current.push(src);
         src.buffer = buffer;
         src.connect(ctx.destination);
         src.start(startTime + i * buffer.duration);
       }
       // schedule bell and transition
-      setTimeout(() => {
-        playBell();
-        setPhase('retention');
-      }, breaths * loopDurationMs);
+      timeoutsRef.current.push(
+        setTimeout(() => {
+          playBell();
+          setPhase('retention');
+        }, breaths * loopDurationMs)
+      );
     }, 3000);
+    // Track the outer start delay so it can be cleared on repeated starts
+    timeoutsRef.current.push(startTimeout);
   };
 
   const handleRetentionTap = () => {
@@ -120,6 +132,13 @@ function App() {
   };
 
   const handleRestart = () => {
+    timeoutsRef.current.forEach(t => clearTimeout(t));
+    timeoutsRef.current = [];
+    bufferSourcesRef.current.forEach(srcNode => {
+      try { srcNode.stop(); } catch {}
+    });
+    bufferSourcesRef.current = [];
+
     setPhase('setup');
     setRecoveryCountdown(15);
     setElapsed(0);
@@ -204,6 +223,19 @@ function App() {
       .then(ab => audioContextRef.current.decodeAudioData(ab))
       .then(buffer => { chimeBufferRef.current = buffer; })
       .catch(err => console.error('Failed to load chime buffer:', err));
+
+    return () => {
+      // clear any scheduled timeouts
+      timeoutsRef.current.forEach(t => clearTimeout(t));
+      // stop any buffer sources
+      bufferSourcesRef.current.forEach(srcNode => {
+        try { srcNode.stop(); } catch {}
+      });
+      // close the audio context
+      if (audioContextRef.current && audioContextRef.current.close) {
+        audioContextRef.current.close();
+      }
+    };
   }, []);
 
   return (
@@ -247,18 +279,20 @@ function App() {
                 <option value={5}>5</option>
               </select>
             </div>
-            <button
-              type="button"
-              onClick={handleStart}
-              style={{
-                fontSize: '1.5rem',
-                padding: '1rem 2rem',
-                marginTop: '1rem',
-                fontWeight: '500'
-              }}
-            >
-              Start Session
-            </button>
+            {!isLaunching && (
+              <button
+                type="button"
+                onClick={handleStart}
+                style={{
+                  fontSize: '1.5rem',
+                  padding: '1rem 2rem',
+                  marginTop: '1rem',
+                  fontWeight: '500'
+                }}
+              >
+                Start Session
+              </button>
+            )}
           </form>
         </>
       )}
